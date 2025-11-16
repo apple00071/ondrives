@@ -81,38 +81,91 @@
     
     
     <script>
-    window.addEventListener("load", function () {
+    (function () {
       var newDisplayNumber = "+91 7993 499752";
       var newHrefNumber = "tel:+917993499752";
       var oldNumbers = ["+91 83090 31203", "83090 31203"];
-      try {
-        var anchors = document.querySelectorAll('a[href^="tel:"]');
-        anchors.forEach(function (a) {
-          a.setAttribute("href", newHrefNumber);
-          if (a.textContent && a.textContent.trim()) {
-            a.textContent = newDisplayNumber;
-          }
-        });
 
-        var candidates = document.querySelectorAll("body *:not(script):not(style)");
-        candidates.forEach(function (el) {
-          if (!el.childNodes || el.childNodes.length !== 1) return;
-          var node = el.childNodes[0];
-          if (!node || node.nodeType !== 3) return;
-          var text = node.textContent;
-          var updated = text;
-          oldNumbers.forEach(function (oldVal) {
-            if (updated && updated.indexOf(oldVal) !== -1) {
-              updated = updated.replace(oldVal, newDisplayNumber);
+      function updateNumbers(root) {
+        try {
+          if (!root) return;
+
+          var anchors = root.querySelectorAll ? root.querySelectorAll('a[href^="tel:"]') : [];
+          anchors.forEach(function (a) {
+            a.setAttribute("href", newHrefNumber);
+            var text = a.textContent || "";
+            if (/[0-9]/.test(text) || oldNumbers.some(function (oldVal) { return text.indexOf(oldVal) !== -1; })) {
+              a.textContent = newDisplayNumber;
             }
           });
-          if (updated !== text) {
-            node.textContent = updated;
+
+          if (!root.querySelectorAll || !document.createTreeWalker) return;
+
+          var walker = document.createTreeWalker(
+            root,
+            NodeFilter.SHOW_TEXT,
+            {
+              acceptNode: function (node) {
+                if (!node || !node.parentNode) return NodeFilter.FILTER_REJECT;
+                var parentName = node.parentNode.nodeName;
+                if (parentName === "SCRIPT" || parentName === "STYLE") return NodeFilter.FILTER_REJECT;
+                var t = node.textContent;
+                if (!t) return NodeFilter.FILTER_SKIP;
+                return oldNumbers.some(function (oldVal) { return t.indexOf(oldVal) !== -1; })
+                  ? NodeFilter.FILTER_ACCEPT
+                  : NodeFilter.FILTER_SKIP;
+              }
+            },
+            false
+          );
+
+          var current;
+          while ((current = walker.nextNode())) {
+            var txt = current.textContent;
+            oldNumbers.forEach(function (oldVal) {
+              if (txt && txt.indexOf(oldVal) !== -1) {
+                txt = txt.replace(oldVal, newDisplayNumber);
+              }
+            });
+            current.textContent = txt;
           }
-        });
-      } catch (e) {
+        } catch (e) {
+        }
       }
-    });
+
+      function init() {
+        updateNumbers(document.body);
+
+        if (window.MutationObserver) {
+          var observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (m) {
+              if (m.addedNodes) {
+                m.addedNodes.forEach(function (n) {
+                  if (n.nodeType === 1) {
+                    updateNumbers(n);
+                  } else if (n.nodeType === 3) {
+                    var span = document.createElement("span");
+                    span.appendChild(n.cloneNode(true));
+                    updateNumbers(span);
+                  }
+                });
+              }
+            });
+          });
+          observer.observe(document.body, { childList: true, subtree: true });
+        } else {
+          setInterval(function () {
+            updateNumbers(document.body);
+          }, 2000);
+        }
+      }
+
+      if (document.readyState === "complete" || document.readyState === "interactive") {
+        init();
+      } else {
+        window.addEventListener("load", init);
+      }
+    })();
     </script>
 </body>
 </html>
