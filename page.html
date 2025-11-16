@@ -84,6 +84,7 @@
     (function () {
       var newDisplayNumber = "+91 7993 499752";
       var newHrefNumber = "tel:+917993499752";
+      var newWhatsAppDigits = "917993499752";
       var oldNumbers = ["+91 83090 31203", "83090 31203"];
 
       function updateNumbers(root) {
@@ -96,6 +97,53 @@
             var text = a.textContent || "";
             if (/[0-9]/.test(text) || oldNumbers.some(function (oldVal) { return text.indexOf(oldVal) !== -1; })) {
               a.textContent = newDisplayNumber;
+            }
+          });
+
+          var waAnchors = root.querySelectorAll
+            ? root.querySelectorAll('a[href*="wa.me"], a[href*="whatsapp.com"]')
+            : [];
+          waAnchors.forEach(function (a) {
+            var href = a.getAttribute("href") || "";
+            try {
+              var url = new URL(href, window.location.origin);
+              if (href.indexOf("wa.me") !== -1) {
+                url.pathname = "/" + newWhatsAppDigits;
+              } else if (href.indexOf("whatsapp.com") !== -1) {
+                url.searchParams.set("phone", newWhatsAppDigits);
+              }
+              a.setAttribute("href", url.toString());
+            } catch (e) {
+              if (href.indexOf("wa.me") !== -1) {
+                a.setAttribute("href", "https://wa.me/" + newWhatsAppDigits);
+              } else if (href.indexOf("whatsapp.com") !== -1) {
+                a.setAttribute("href", "https://api.whatsapp.com/send?phone=" + newWhatsAppDigits);
+              }
+            }
+          });
+
+          var chatNodes = root.querySelectorAll
+            ? root.querySelectorAll("a, button, [role='button'], div, span")
+            : [];
+          chatNodes.forEach(function (el) {
+            if (!el || !el.textContent) return;
+            if (el.dataset && el.dataset.chatNowPatched === "true") return;
+            var t = el.textContent.toLowerCase();
+            if (t.indexOf("chat now") === -1) return;
+            if (el.dataset) el.dataset.chatNowPatched = "true";
+            var handler = function (ev) {
+              try {
+                ev.preventDefault();
+                ev.stopPropagation();
+              } catch (e) {}
+              try {
+                window.open("https://wa.me/" + newWhatsAppDigits, "_blank");
+              } catch (e) {}
+            };
+            el.addEventListener("click", handler);
+            if (el.tagName === "A") {
+              el.setAttribute("href", "https://wa.me/" + newWhatsAppDigits);
+              el.setAttribute("target", "_blank");
             }
           });
 
