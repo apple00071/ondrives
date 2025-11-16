@@ -80,5 +80,39 @@
     
     
     
+    <script>
+    window.addEventListener("load", function () {
+      var newDisplayNumber = "+91 7993 499752";
+      var newHrefNumber = "tel:+917993499752";
+      var oldNumbers = ["+91 83090 31203", "83090 31203"];
+      try {
+        var anchors = document.querySelectorAll('a[href^="tel:"]');
+        anchors.forEach(function (a) {
+          a.setAttribute("href", newHrefNumber);
+          if (a.textContent && a.textContent.trim()) {
+            a.textContent = newDisplayNumber;
+          }
+        });
+
+        var candidates = document.querySelectorAll("body *:not(script):not(style)");
+        candidates.forEach(function (el) {
+          if (!el.childNodes || el.childNodes.length !== 1) return;
+          var node = el.childNodes[0];
+          if (!node || node.nodeType !== 3) return;
+          var text = node.textContent;
+          var updated = text;
+          oldNumbers.forEach(function (oldVal) {
+            if (updated && updated.indexOf(oldVal) !== -1) {
+              updated = updated.replace(oldVal, newDisplayNumber);
+            }
+          });
+          if (updated !== text) {
+            node.textContent = updated;
+          }
+        });
+      } catch (e) {
+      }
+    });
+    </script>
 </body>
 </html>
