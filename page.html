@@ -130,6 +130,7 @@
             if (el.dataset && el.dataset.chatNowPatched === "true") return;
             var t = el.textContent.toLowerCase();
             if (t.indexOf("chat now") === -1) return;
+            if (/[0-9]/.test(t)) return;
             if (el.dataset) el.dataset.chatNowPatched = "true";
             var handler = function (ev) {
               try {
